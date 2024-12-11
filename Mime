@@ -1,0 +1,61 @@
+import requests
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def get_weather(city, api_key):
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+def send_email(sender_email, sender_password, recipient_email, subject, body):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = subject
+        
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient_email, msg.as_string())
+        server.quit()
+        print("Email sent successfully!")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
+if __name__ == "__main__":
+    # User configuration
+    city = "Kyiv"
+    api_key = "your_openweathermap_api_key"  # Replace with your OpenWeatherMap API key
+    sender_email = "your_email@gmail.com"  # Replace with your email
+    sender_password = "your_email_password"  # Replace with your email password
+    recipient_email = "recipient_email@gmail.com"  # Replace with recipient's email
+
+    # Get weather information
+    weather_data = get_weather(city, api_key)
+
+    if weather_data:
+        weather_description = weather_data['weather'][0]['description']
+        temperature = weather_data['main']['temp']
+        humidity = weather_data['main']['humidity']
+
+        # Compose email content
+        subject = f"Weather Update for {city}"
+        body = (f"Current weather in {city}:
+"
+                f"- Description: {weather_description}
+"
+                f"- Temperature: {temperature}°C
+"
+                f"- Humidity: {humidity}%")
+
+        # Send email
+        send_email(sender_email, sender_password, recipient_email, subject, body)
+    else:
+        print("Failed to retrieve weather data. Please check your API key and city name.")
